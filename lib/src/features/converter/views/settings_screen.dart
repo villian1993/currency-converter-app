@@ -1,5 +1,6 @@
 import 'package:currency_converter_app/src/app/providers.dart';
-import 'package:currency_converter_app/src/config/env.dart';
+import 'package:currency_converter_app/src/config/api_config.dart';
+import 'package:currency_converter_app/src/core/widgets/custom_app_bar.dart';
 import 'package:currency_converter_app/src/features/converter/views/widgets/currency_picker_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +14,12 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncState = ref.watch(converterViewModelProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: const CustomAppBar(
+        titleText: 'Settings',
+        showBackButton: true,
+        showTitleIcon: true,
+        titleIcon: Icon(Icons.settings),
+      ),
       body: asyncState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
@@ -46,7 +52,9 @@ class SettingsScreen extends ConsumerWidget {
             ListTile(
               title: const Text('API key'),
               subtitle: Text(
-                Env.apilayerApiKey.trim().isNotEmpty
+                ApiConfig.apiKeyFromFfi.isNotEmpty
+                    ? 'Using native (FFI)'
+                    : ApiConfig.apiKeyFromDefine.isNotEmpty
                     ? 'Using --dart-define'
                     : 'Saved locally (tap to update)',
               ),

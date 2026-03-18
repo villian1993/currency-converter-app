@@ -3,15 +3,14 @@ import 'package:currency_converter_app/src/data/api/exchange_rates_api.dart';
 import 'package:currency_converter_app/src/data/cache/rates_cache.dart';
 import 'package:currency_converter_app/src/features/converter/models/currency_symbol.dart';
 import 'package:currency_converter_app/src/features/converter/models/exchange_rates.dart';
-import 'package:currency_converter_app/src/config/env.dart';
+import 'package:currency_converter_app/src/config/api_config.dart';
 
 class ExchangeRatesRepository {
   ExchangeRatesRepository({
     required ExchangeRatesDataSource api,
     required RatesCache cache,
-  })
-      : _api = api,
-        _cache = cache;
+  }) : _api = api,
+       _cache = cache;
 
   final ExchangeRatesDataSource _api;
   final RatesCache _cache;
@@ -23,7 +22,10 @@ class ExchangeRatesRepository {
   Future<String?> getSavedApiKey() => _cache.readApiKey();
 
   Future<String> _resolveApiKey() async {
-    final fromDefine = Env.apilayerApiKey.trim();
+    final fromFfi = ApiConfig.apiKeyFromFfi;
+    if (fromFfi.isNotEmpty) return fromFfi;
+
+    final fromDefine = ApiConfig.apiKeyFromDefine;
     if (fromDefine.isNotEmpty) return fromDefine;
     final saved = (await _cache.readApiKey())?.trim() ?? '';
     if (saved.isNotEmpty) return saved;
@@ -62,7 +64,8 @@ class ExchangeRatesRepository {
   }) async {
     final cached = await _cache.readLatest(baseCurrency: baseCurrency);
     final nowMs = DateTime.now().millisecondsSinceEpoch;
-    final isFresh = cached != null &&
+    final isFresh =
+        cached != null &&
         Duration(milliseconds: nowMs - cached.fetchedAtMs) <= cacheTtl;
 
     if (!forceRefresh && isFresh) {
@@ -71,8 +74,10 @@ class ExchangeRatesRepository {
 
     try {
       final apiKey = await _resolveApiKey();
-      final latest =
-          await _api.fetchLatest(apiKey: apiKey, baseCurrency: baseCurrency);
+      final latest = await _api.fetchLatest(
+        apiKey: apiKey,
+        baseCurrency: baseCurrency,
+      );
       await _cache.writeLatest(
         CachedLatestRates(fetchedAtMs: nowMs, latest: latest),
       );

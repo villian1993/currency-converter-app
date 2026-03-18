@@ -22,34 +22,56 @@ class MultiCurrencyRow extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            OutlinedButton.icon(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 420;
+
+            final currencyButton = OutlinedButton.icon(
               onPressed: onPickCurrency,
               icon: const Icon(Icons.currency_exchange),
               label: Text(input.currencyCode),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                key: ValueKey('amount_${input.id}'),
-                initialValue: input.amountText,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Amount',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: onAmountChanged,
+            );
+
+            final amountField = TextFormField(
+              key: ValueKey('amount_${input.id}'),
+              initialValue: input.amountText,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
               ),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
+              decoration: const InputDecoration(
+                labelText: 'Amount',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: onAmountChanged,
+            );
+
+            final removeButton = IconButton(
               onPressed: canRemove ? onRemove : null,
               tooltip: 'Remove',
               icon: const Icon(Icons.close),
-            ),
-          ],
+            );
+
+            if (isNarrow) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(children: [currencyButton, const Spacer(), removeButton]),
+                  const SizedBox(height: 12),
+                  amountField,
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                currencyButton,
+                const SizedBox(width: 12),
+                Expanded(child: amountField),
+                const SizedBox(width: 8),
+                removeButton,
+              ],
+            );
+          },
         ),
       ),
     );

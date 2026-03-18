@@ -28,6 +28,21 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        externalNativeBuild {
+            cmake {
+                // Optional: define these via gradle.properties to avoid committing secrets.
+                // Example:
+                //   APICONFIG_BASE_URL=https://api.apilayer.com/exchangerates_data
+                //   APICONFIG_API_KEY=your_key_here
+                val baseUrl = project.findProperty("APICONFIG_BASE_URL")?.toString() ?: ""
+                val apiKey = project.findProperty("APICONFIG_API_KEY")?.toString() ?: ""
+                arguments += listOf(
+                    "-DAPICONFIG_BASE_URL=\\\"$baseUrl\\\"",
+                    "-DAPICONFIG_API_KEY=\\\"$apiKey\\\"",
+                )
+            }
+        }
     }
 
     buildTypes {
@@ -35,6 +50,12 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
         }
     }
 }

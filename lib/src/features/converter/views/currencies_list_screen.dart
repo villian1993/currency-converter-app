@@ -1,4 +1,5 @@
 import 'package:currency_converter_app/src/app/providers.dart';
+import 'package:currency_converter_app/src/core/widgets/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -19,7 +20,12 @@ class _CurrenciesListScreenState extends ConsumerState<CurrenciesListScreen> {
   Widget build(BuildContext context) {
     final asyncState = ref.watch(converterViewModelProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Currencies')),
+      appBar: const CustomAppBar(
+        titleText: 'Currencies',
+        showBackButton: true,
+        showTitleIcon: true,
+        titleIcon: Icon(Icons.list_alt),
+      ),
       body: asyncState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
@@ -50,9 +56,7 @@ class _CurrenciesListScreenState extends ConsumerState<CurrenciesListScreen> {
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final s = symbols[index];
-                    return ListTile(
-                      title: Text('${s.code} — ${s.name}'),
-                    );
+                    return ListTile(title: Text('${s.code} — ${s.name}'));
                   },
                 ),
               ),

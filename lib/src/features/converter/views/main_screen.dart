@@ -1,4 +1,5 @@
 import 'package:currency_converter_app/src/app/providers.dart';
+import 'package:currency_converter_app/src/core/widgets/custom_app_bar.dart';
 import 'package:currency_converter_app/src/features/converter/views/currencies_list_screen.dart';
 import 'package:currency_converter_app/src/features/converter/views/settings_screen.dart';
 import 'package:currency_converter_app/src/features/converter/views/widgets/currency_picker_sheet.dart';
@@ -16,15 +17,20 @@ class MainScreen extends ConsumerWidget {
       final nextMsg = next.valueOrNull?.message;
       if (nextMsg == null || nextMsg.isEmpty) return;
       if (nextMsg == prevMsg) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(nextMsg)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(nextMsg)));
       ref.read(converterViewModelProvider.notifier).clearMessage();
     });
 
     final asyncState = ref.watch(converterViewModelProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Currency Converter'),
+      appBar: CustomAppBar(
+        titleText: 'Currency Converter',
+        hideHomeButton: true,
+        showTitleIcon: true,
+        titleIcon: const Icon(Icons.currency_exchange),
         actions: [
           IconButton(
             tooltip: 'Currencies',
@@ -44,7 +50,8 @@ class MainScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (vmState) => RefreshIndicator(
-          onRefresh: () => ref.read(converterViewModelProvider.notifier).refreshSymbols(),
+          onRefresh: () =>
+              ref.read(converterViewModelProvider.notifier).refreshSymbols(),
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -101,8 +108,9 @@ class MainScreen extends ConsumerWidget {
               Align(
                 alignment: Alignment.centerLeft,
                 child: FilledButton.icon(
-                  onPressed: () =>
-                      ref.read(converterViewModelProvider.notifier).addCurrencyField(),
+                  onPressed: () => ref
+                      .read(converterViewModelProvider.notifier)
+                      .addCurrencyField(),
                   icon: const Icon(Icons.add),
                   label: const Text('Add Currency'),
                 ),
@@ -112,8 +120,8 @@ class MainScreen extends ConsumerWidget {
                 onPressed: vmState.isBusy
                     ? null
                     : () => ref
-                        .read(converterViewModelProvider.notifier)
-                        .calculateTotal(),
+                          .read(converterViewModelProvider.notifier)
+                          .calculateTotal(),
                 child: const Text('Calculate Total'),
               ),
               const SizedBox(height: 16),

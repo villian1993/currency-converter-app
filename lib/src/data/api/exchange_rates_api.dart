@@ -12,11 +12,12 @@ abstract class ExchangeRatesDataSource {
 }
 
 class ExchangeRatesApi implements ExchangeRatesDataSource {
-  ExchangeRatesApi({required Dio dio}) : _dio = dio;
-
-  static const _baseUrl = 'https://api.apilayer.com/exchangerates_data';
+  ExchangeRatesApi({required Dio dio, required String baseUrl})
+    : _dio = dio,
+      _baseUrl = baseUrl;
 
   final Dio _dio;
+  final String _baseUrl;
 
   @override
   Future<List<CurrencySymbol>> fetchSymbols({required String apiKey}) async {
@@ -35,15 +36,16 @@ class ExchangeRatesApi implements ExchangeRatesDataSource {
         throw const NetworkError('Invalid symbols response.');
       }
 
-      final list = symbols.entries
-          .map(
-            (e) => CurrencySymbol(
-              code: e.key,
-              name: (e.value ?? '').toString(),
-            ),
-          )
-          .toList()
-        ..sort((a, b) => a.code.compareTo(b.code));
+      final list =
+          symbols.entries
+              .map(
+                (e) => CurrencySymbol(
+                  code: e.key,
+                  name: (e.value ?? '').toString(),
+                ),
+              )
+              .toList()
+            ..sort((a, b) => a.code.compareTo(b.code));
       return list;
     } on DioException catch (e) {
       final code = e.response?.statusCode;
@@ -89,7 +91,9 @@ class ExchangeRatesApi implements ExchangeRatesDataSource {
       return ExchangeRates(base: base, date: date, rates: rates);
     } on DioException catch (e) {
       final code = e.response?.statusCode;
-      throw NetworkError('Failed to fetch latest rates (${code ?? 'network'}).');
+      throw NetworkError(
+        'Failed to fetch latest rates (${code ?? 'network'}).',
+      );
     }
   }
 }

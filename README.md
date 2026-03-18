@@ -30,6 +30,13 @@ Option A (recommended): pass via `--dart-define`:
 flutter run --dart-define=APILAYER_API_KEY=YOUR_KEY
 ```
 
+Option A2: (Android/iOS) provide API key + base URL via native FFI (build-time)
+- **Android:** set values in `android/gradle.properties` (do not commit real keys):
+  - `APICONFIG_BASE_URL=https://api.apilayer.com/exchangerates_data`
+  - `APICONFIG_API_KEY=YOUR_KEY`
+- **iOS:** define `APICONFIG_BASE_URL` and `APICONFIG_API_KEY` in Xcode build settings
+  (`GCC_PREPROCESSOR_DEFINITIONS`) for the Runner target, or via an `.xcconfig` you keep out of git.
+
 Option B: open `Settings` in the app and paste the API key (it is saved locally on the device).
 
 ## Run
@@ -55,4 +62,3 @@ flutter test
 
 ## Notes
 - Assessment mentions Riverpod; this implementation uses Riverpod.
-- Internet popup uses `connectivity_plus` to show a “No Internet” dialog when offline.
