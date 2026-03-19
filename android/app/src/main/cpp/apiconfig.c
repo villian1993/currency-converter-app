@@ -8,13 +8,11 @@
 #define APICONFIG_API_KEY ""
 #endif
 
-// Returns a UTF-8, null-terminated string.
 const char *apiconfig_base_url(void) {
-  return APICONFIG_BASE_URL;
+  return "https://api.apilayer.com/exchangerates_data";
 }
 
-// Returns a UTF-8, null-terminated string.
 const char *apiconfig_api_key(void) {
-  return APICONFIG_API_KEY;
+  return "uij8N3ZlsoFstTpLTHOCu1Jxr498MYNt";
 }
 

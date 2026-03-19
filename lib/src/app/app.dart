@@ -1,8 +1,7 @@
-import 'package:currency_converter_app/src/features/converter/views/currencies_list_screen.dart';
-import 'package:currency_converter_app/src/features/converter/views/main_screen.dart';
-import 'package:currency_converter_app/src/features/converter/views/settings_screen.dart';
 import 'package:currency_converter_app/src/config/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+import '../app/routes/app_router.dart';
+import '../app/routes/app_routes.dart';
 
 class CurrencyConverterApp extends StatelessWidget {
   const CurrencyConverterApp({super.key});
@@ -12,11 +11,8 @@ class CurrencyConverterApp extends StatelessWidget {
     return MaterialApp(
       title: 'Currency Converter',
       theme: AppTheme.light(),
-      routes: {
-        '/': (_) => const MainScreen(),
-        SettingsScreen.routeName: (_) => const SettingsScreen(),
-        CurrenciesListScreen.routeName: (_) => const CurrenciesListScreen(),
-      },
+      initialRoute: AppRoutes.main,
+      onGenerateRoute: AppRouter.generateRoute,
     );
   }
 }

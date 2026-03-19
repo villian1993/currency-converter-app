@@ -1,5 +1,5 @@
 import 'package:currency_converter_app/src/app/providers.dart';
-import 'package:currency_converter_app/src/core/app_error.dart';
+import 'package:currency_converter_app/src/core/common_error/app_error.dart';
 import 'package:currency_converter_app/src/data/repositories/exchange_rates_repository.dart';
 import 'package:currency_converter_app/src/features/converter/models/currency_symbol.dart';
 import 'package:currency_converter_app/src/features/converter/models/multi_currency_input.dart';
@@ -33,16 +33,17 @@ class ConverterState {
     double? normalizedTotal,
     String? lastRatesDate,
     String? message,
-  }) =>
-      ConverterState(
-        baseCurrency: baseCurrency ?? this.baseCurrency,
-        symbols: symbols ?? this.symbols,
-        inputs: inputs ?? this.inputs,
-        isBusy: isBusy ?? this.isBusy,
-        normalizedTotal: normalizedTotal ?? this.normalizedTotal,
-        lastRatesDate: lastRatesDate ?? this.lastRatesDate,
-        message: message,
-      );
+  }) {
+    return ConverterState(
+      baseCurrency: baseCurrency ?? this.baseCurrency,
+      symbols: symbols ?? this.symbols,
+      inputs: inputs ?? this.inputs,
+      isBusy: isBusy ?? this.isBusy,
+      normalizedTotal: normalizedTotal ?? this.normalizedTotal,
+      lastRatesDate: lastRatesDate ?? this.lastRatesDate,
+      message: message ?? this.message,
+    );
+  }
 }
 
 class ConverterViewModel extends AsyncNotifier<ConverterState> {
@@ -53,7 +54,15 @@ class ConverterViewModel extends AsyncNotifier<ConverterState> {
 
   @override
   Future<ConverterState> build() async {
-    final baseCurrency = await _repository.getBaseCurrency(defaultValue: 'USD');
+    var baseCurrency =
+    await _repository.getBaseCurrency(defaultValue: 'USD');
+
+    // Force USD if nothing saved before
+    if (baseCurrency.trim().isEmpty) {
+      baseCurrency = 'USD';
+      await _repository.setBaseCurrency('USD');
+    }
+
     try {
       final symbols = await _repository.getSymbols();
       return ConverterState(
@@ -68,22 +77,37 @@ class ConverterViewModel extends AsyncNotifier<ConverterState> {
         isBusy: false,
       );
     } catch (e) {
-      if (e is MissingApiKeyError || e is NetworkError) {
-        final symbols = _fallbackSymbols;
-        return ConverterState(
-          baseCurrency: baseCurrency,
-          symbols: symbols,
-          inputs: _ensureInputsValid(
-            inputs: const [
-              MultiCurrencyInput(id: '0', currencyCode: 'USD', amountText: ''),
-            ],
+      final symbols = _fallbackSymbols;
+
+      // Delay message to ensure UI listener triggers
+      Future.microtask(() {
+        state = AsyncData(
+          ConverterState(
+            baseCurrency: baseCurrency,
             symbols: symbols,
+            inputs: _ensureInputsValid(
+              inputs: const [
+                MultiCurrencyInput(id: '0', currencyCode: 'USD', amountText: ''),
+              ],
+              symbols: symbols,
+            ),
+            isBusy: false,
+            message: (e is AppError) ? e.message : 'Something went wrong',
           ),
-          isBusy: false,
-          message: (e is AppError) ? e.message : e.toString(),
         );
-      }
-      rethrow;
+      });
+
+      return ConverterState(
+        baseCurrency: baseCurrency,
+        symbols: symbols,
+        inputs: _ensureInputsValid(
+          inputs: const [
+            MultiCurrencyInput(id: '0', currencyCode: 'USD', amountText: ''),
+          ],
+          symbols: symbols,
+        ),
+        isBusy: false,
+      );
     }
   }
 
@@ -116,15 +140,24 @@ class ConverterViewModel extends AsyncNotifier<ConverterState> {
     final current = state.valueOrNull;
     if (current == null || code == current.baseCurrency) return;
 
-    state = AsyncData(
-      current.copyWith(
-        baseCurrency: code,
-        normalizedTotal: null,
-        lastRatesDate: null,
-        message: null,
-      ),
-    );
-    await _repository.setBaseCurrency(code);
+    try {
+      await _repository.setBaseCurrency(code);
+
+      state = AsyncData(
+        current.copyWith(
+          baseCurrency: code,
+          normalizedTotal: null,
+          lastRatesDate: null,
+          message: null,
+        ),
+      );
+    } catch (e) {
+      state = AsyncData(
+        current.copyWith(
+          message: (e is AppError) ? e.message : e.toString(),
+        ),
+      );
+    }
   }
 
   void addCurrencyField() {
@@ -191,15 +224,53 @@ class ConverterViewModel extends AsyncNotifier<ConverterState> {
     final current = state.valueOrNull;
     if (current == null) return;
 
+    // VALIDATIONS
+    if (current.inputs.isEmpty) {
+      state = AsyncData(current.copyWith(message: 'Please add at least one currency.'));
+      return;
+    }
+
+    // check empty / invalid values
+    for (final input in current.inputs) {
+      if (input.amountText.trim().isEmpty) {
+        state = AsyncData(current.copyWith(message: 'Amount cannot be empty.'));
+        return;
+      }
+
+      final value = double.tryParse(input.amountText);
+      if (value == null) {
+        state = AsyncData(current.copyWith(message: 'Invalid number entered.'));
+        return;
+      }
+
+      if (value <= 0) {
+        state = AsyncData(current.copyWith(message: 'Amount must be greater than 0.'));
+        return;
+      }
+    }
+
+    // check duplicate currencies
+    final codes = current.inputs.map((e) => e.currencyCode).toList();
+    final uniqueCodes = codes.toSet();
+
+    if (codes.length != uniqueCodes.length) {
+      state = AsyncData(current.copyWith(message: 'Duplicate currencies not allowed.'));
+      return;
+    }
+
+    // Continue original logic
     state = AsyncData(current.copyWith(isBusy: true, message: null));
+
     try {
       final latest =
-          await _repository.getLatestRates(baseCurrency: current.baseCurrency);
+      await _repository.getLatestRates(baseCurrency: current.baseCurrency);
+
       final total = _calculator.calculateTotalInBase(
         inputs: current.inputs,
         baseCurrency: current.baseCurrency,
         latest: latest,
       );
+
       state = AsyncData(
         current.copyWith(
           isBusy: false,
@@ -216,19 +287,6 @@ class ConverterViewModel extends AsyncNotifier<ConverterState> {
         ),
       );
     }
-  }
-
-  Future<void> saveApiKey(String apiKey) async {
-    final current = state.valueOrNull;
-    if (current == null) return;
-    final trimmed = apiKey.trim();
-    if (trimmed.isEmpty) {
-      state = AsyncData(current.copyWith(message: 'API key cannot be empty.'));
-      return;
-    }
-
-    await _repository.setApiKey(trimmed);
-    state = AsyncData(current.copyWith(message: 'API key saved.'));
   }
 
   void clearMessage() {
@@ -273,4 +331,17 @@ class ConverterViewModel extends AsyncNotifier<ConverterState> {
     CurrencySymbol(code: 'BRL', name: 'Brazilian Real'),
     CurrencySymbol(code: 'MXN', name: 'Mexican Peso'),
   ];
+
+  void clearAllAmounts() {
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    state = AsyncData(
+      current.copyWith(
+        inputs: current.inputs
+            .map((e) => e.copyWith(amountText: ''))
+            .toList(),
+      ),
+    );
+  }
 }

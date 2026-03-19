@@ -8,9 +8,6 @@ abstract class RatesCache {
   Future<List<CurrencySymbol>?> readSymbols();
   Future<void> writeSymbols(List<CurrencySymbol> symbols);
 
-  Future<String?> readApiKey();
-  Future<void> writeApiKey(String apiKey);
-
   Future<String?> readBaseCurrency();
   Future<void> writeBaseCurrency(String code);
 
@@ -28,25 +25,30 @@ class CachedLatestRates {
   final ExchangeRates latest;
 
   Map<String, Object?> toJson() => {
-        'fetchedAtMs': fetchedAtMs,
-        'latest': latest.toJson(),
-      };
+    'fetchedAtMs': fetchedAtMs,
+    'latest': latest.toJson(),
+  };
 
   static CachedLatestRates? fromJson(Map<String, dynamic> json) {
     final fetchedAtMs = json['fetchedAtMs'];
     final latestJson = json['latest'];
+
     if (fetchedAtMs is! int || latestJson is! Map<String, dynamic>) {
       return null;
     }
+
     final latest = ExchangeRates.fromJson(latestJson);
     if (latest == null) return null;
-    return CachedLatestRates(fetchedAtMs: fetchedAtMs, latest: latest);
+
+    return CachedLatestRates(
+      fetchedAtMs: fetchedAtMs,
+      latest: latest,
+    );
   }
 }
 
 class SharedPreferencesRatesCache implements RatesCache {
   static const _symbolsKey = 'symbols.v1';
-  static const _apiKeyKey = 'apiKey.v1';
   static const _baseCurrencyKey = 'baseCurrency.v1';
   static String _latestKey(String base) => 'latest.v1.$base';
 
@@ -54,18 +56,28 @@ class SharedPreferencesRatesCache implements RatesCache {
 
   @override
   Future<List<CurrencySymbol>?> readSymbols() async {
-    final prefs = await _prefs;
-    final raw = prefs.getString(_symbolsKey);
-    if (raw == null) return null;
-    final decoded = jsonDecode(raw);
-    if (decoded is! List) return null;
-    final out = <CurrencySymbol>[];
-    for (final item in decoded) {
-      if (item is! Map<String, dynamic>) continue;
-      final symbol = CurrencySymbol.fromJson(item);
-      if (symbol != null) out.add(symbol);
+    try {
+      final prefs = await _prefs;
+      final raw = prefs.getString(_symbolsKey);
+      if (raw == null) return null;
+
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return null;
+
+      final out = <CurrencySymbol>[];
+
+      for (final item in decoded) {
+        if (item is! Map<String, dynamic>) continue;
+
+        final symbol = CurrencySymbol.fromJson(item);
+        if (symbol != null) out.add(symbol);
+      }
+
+      return out.isEmpty ? null : out;
+    } catch (_) {
+      // Prevent crash on corrupted JSON
+      return null;
     }
-    return out.isEmpty ? null : out;
   }
 
   @override
@@ -75,18 +87,6 @@ class SharedPreferencesRatesCache implements RatesCache {
       _symbolsKey,
       jsonEncode(symbols.map((e) => e.toJson()).toList()),
     );
-  }
-
-  @override
-  Future<String?> readApiKey() async {
-    final prefs = await _prefs;
-    return prefs.getString(_apiKeyKey);
-  }
-
-  @override
-  Future<void> writeApiKey(String apiKey) async {
-    final prefs = await _prefs;
-    await prefs.setString(_apiKeyKey, apiKey);
   }
 
   @override
@@ -102,13 +102,21 @@ class SharedPreferencesRatesCache implements RatesCache {
   }
 
   @override
-  Future<CachedLatestRates?> readLatest({required String baseCurrency}) async {
-    final prefs = await _prefs;
-    final raw = prefs.getString(_latestKey(baseCurrency));
-    if (raw == null) return null;
-    final decoded = jsonDecode(raw);
-    if (decoded is! Map<String, dynamic>) return null;
-    return CachedLatestRates.fromJson(decoded);
+  Future<CachedLatestRates?> readLatest({
+    required String baseCurrency,
+  }) async {
+    try {
+      final prefs = await _prefs;
+      final raw = prefs.getString(_latestKey(baseCurrency));
+      if (raw == null) return null;
+
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) return null;
+
+      return CachedLatestRates.fromJson(decoded);
+    } catch (_) {
+      return null;
+    }
   }
 
   @override
@@ -123,7 +131,6 @@ class SharedPreferencesRatesCache implements RatesCache {
 
 class MemoryRatesCache implements RatesCache {
   List<CurrencySymbol>? _symbols;
-  String? _apiKey;
   String? _baseCurrency;
   final Map<String, CachedLatestRates> _latest = {};
 
@@ -132,15 +139,7 @@ class MemoryRatesCache implements RatesCache {
 
   @override
   Future<void> writeSymbols(List<CurrencySymbol> symbols) async {
-    _symbols = [...symbols];
-  }
-
-  @override
-  Future<String?> readApiKey() async => _apiKey;
-
-  @override
-  Future<void> writeApiKey(String apiKey) async {
-    _apiKey = apiKey;
+    _symbols = List.unmodifiable(symbols); // safer
   }
 
   @override
@@ -152,8 +151,11 @@ class MemoryRatesCache implements RatesCache {
   }
 
   @override
-  Future<CachedLatestRates?> readLatest({required String baseCurrency}) async =>
-      _latest[baseCurrency];
+  Future<CachedLatestRates?> readLatest({
+    required String baseCurrency,
+  }) async {
+    return _latest[baseCurrency];
+  }
 
   @override
   Future<void> writeLatest(CachedLatestRates latest) async {

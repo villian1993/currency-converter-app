@@ -36,11 +36,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final homePressed =
-        onHomePressed ??
-        () => Navigator.of(
-          context,
-        ).pushNamedAndRemoveUntil('/', (route) => false);
 
     return AppBar(
       automaticallyImplyLeading: false,
@@ -74,11 +69,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
-        if (!hideHomeButton)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _HomeButton(onPressed: homePressed),
-          ),
         if (actions != null) ...actions!,
         if (trailingIcon != null)
           IconButton(
@@ -94,43 +84,4 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-class _HomeButton extends StatelessWidget {
-  const _HomeButton({required this.onPressed});
 
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.homePillBackground,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.home, size: 16, color: AppColors.homePillForeground),
-              SizedBox(width: 6),
-              Text(
-                'Home',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.homePillForeground,
-                  letterSpacing: 0.2,
-                  height: 1.2,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

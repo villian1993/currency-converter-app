@@ -20,9 +20,10 @@ final dioProvider = Provider<Dio>((ref) {
 });
 
 final exchangeRatesApiProvider = Provider<ExchangeRatesDataSource>((ref) {
+  final config = ref.watch(apiConfigProvider);
   return ExchangeRatesApi(
     dio: ref.watch(dioProvider),
-    baseUrl: ApiConfig.baseUrl,
+    baseUrl: config.baseUrl,
   );
 });
 
@@ -30,12 +31,15 @@ final ratesCacheProvider = Provider<RatesCache>((ref) {
   return SharedPreferencesRatesCache();
 });
 
-final exchangeRatesRepositoryProvider = Provider<ExchangeRatesRepository>((
-  ref,
-) {
+final exchangeRatesRepositoryProvider = Provider<ExchangeRatesRepository>((ref) {
+  final api = ref.watch(exchangeRatesApiProvider);
+  final cache = ref.watch(ratesCacheProvider);
+  final config = ref.watch(apiConfigProvider);
+
   return ExchangeRatesRepository(
-    api: ref.watch(exchangeRatesApiProvider),
-    cache: ref.watch(ratesCacheProvider),
+    api: api,
+    cache: cache,
+    config: config,
   );
 });
 

@@ -1,4 +1,4 @@
-import 'package:currency_converter_app/src/core/app_error.dart';
+import 'package:currency_converter_app/src/core/common_error/app_error.dart';
 import 'package:currency_converter_app/src/features/converter/models/exchange_rates.dart';
 import 'package:currency_converter_app/src/features/converter/models/multi_currency_input.dart';
 

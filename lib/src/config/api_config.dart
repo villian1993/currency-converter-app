@@ -1,21 +1,30 @@
-import 'package:currency_converter_app/src/config/env.dart';
 import 'package:currency_converter_app/src/config/native_api_config.dart';
-
-enum ApiKeySource { ffi, dartDefine, saved }
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ApiConfig {
-  static String get baseUrl =>
-      NativeApiConfig.baseUrl?.trim().isNotEmpty == true
-      ? NativeApiConfig.baseUrl!.trim()
-      : Env.apilayerBaseUrl.trim();
+  final String baseUrl;
+  final String apiKey;
 
-  static String get apiKeyFromDefine => Env.apilayerApiKey.trim();
-
-  static String get apiKeyFromFfi => (NativeApiConfig.apiKey ?? '').trim();
-
-  static ApiKeySource keySource({required bool hasSavedKey}) {
-    if (apiKeyFromFfi.isNotEmpty) return ApiKeySource.ffi;
-    if (apiKeyFromDefine.isNotEmpty) return ApiKeySource.dartDefine;
-    return ApiKeySource.saved;
-  }
+  ApiConfig({
+    required this.baseUrl,
+    required this.apiKey,
+  });
 }
+
+final apiConfigProvider = Provider<ApiConfig>((ref) {
+  final baseUrl = NativeApiConfig.baseUrl?.trim() ?? '';
+  final apiKey = NativeApiConfig.apiKey?.trim() ?? '';
+
+  if (baseUrl.isEmpty) {
+    throw Exception('Base URL not found in FFI');
+  }
+
+  if (apiKey.isEmpty) {
+    throw Exception('API Key not found in FFI');
+  }
+
+  return ApiConfig(
+    baseUrl: baseUrl,
+    apiKey: apiKey,
+  );
+});
