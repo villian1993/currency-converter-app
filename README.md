@@ -5,60 +5,136 @@ Advanced multi-currency converter that:
 - Converts each amount into a selected base currency
 - Calculates and displays a normalized total
 - Supports currency search + a currencies list screen
-- Caches symbols and latest rates locally for offline use (recently fetched)
+- Caches symbols and latest rates locally for offline use
 
-## Requirements Covered (Assessment)
-- Multi-currency input + “Add Currency”
+---
+
+## Features
+- Multi-currency input with dynamic add/remove
 - Base currency selection (Settings)
-- Currency list screen with search
-- Real-time rates from API (`/symbols`, `/latest`)
-- Caching to minimize API calls + basic offline fallback
-- MVVM-ish structure (Views + ViewModel + Repository)
-- Riverpod state management (`flutter_riverpod`)
-- Unit tests focused on ViewModels/Repositories/Logic
+- Currency list with search functionality
+- Real-time currency conversion using API (`/symbols`, `/latest`)
+- Local caching for offline support
+- Clean architecture with MVVM-style separation (View, ViewModel, Repository)
+- Riverpod for state management
+- Robust error handling with user-friendly messages
+- Internet connectivity handling with offline fallback
 
-## Setup
+---
 
-### 1) Install dependencies
+# Setup
+
+### 1. Install dependencies
 ```bash
 flutter pub get
-```
+# API Configuration (FFI - Native Setup)
 
-### 2) Provide API Key (APILayer Exchange Rates Data)
-Option A (recommended): pass via `--dart-define`:
-```bash
-flutter run --dart-define=APILAYER_API_KEY=YOUR_KEY
-```
+No environment variables are used in this project.
 
-Option A2: (Android/iOS) provide API key + base URL via native FFI (build-time)
-- **Android:** set values in `android/gradle.properties` (do not commit real keys):
-  - `APICONFIG_BASE_URL=https://api.apilayer.com/exchangerates_data`
-  - `APICONFIG_API_KEY=YOUR_KEY`
-- **iOS:** define `APICONFIG_BASE_URL` and `APICONFIG_API_KEY` in Xcode build settings
-  (`GCC_PREPROCESSOR_DEFINITIONS`) for the Runner target, or via an `.xcconfig` you keep out of git.
+API configuration is handled using native build-time (FFI-based) configuration.
 
-Option B: open `Settings` in the app and paste the API key (it is saved locally on the device).
+# Run App
+flutter run
 
-## Run
-```bash
-flutter run --dart-define=APILAYER_API_KEY=YOUR_KEY
-```
+# Run Tests
 
-## Tests
-```bash
 flutter test
-```
 
-## Code Structure (High level)
-- `lib/main.dart` – entry point
-- `lib/src/app/app.dart` – routes
-- `lib/src/app/providers.dart` – DI (Riverpod providers)
-- `lib/src/data/` – API client, cache, repository
-- `lib/src/features/converter/` – models, calculator, view model, screens
+# Internet Handling
 
-## Assumptions
-- Latest rates are cached for `6 hours` (see `ExchangeRatesRepository.cacheTtl`).
-- If the network fails, cached symbols/rates are used when available.
+App checks internet connectivity before making API calls
 
-## Notes
-- Assessment mentions Riverpod; this implementation uses Riverpod.
+If no internet:
+
+Cached data is used (if available)
+
+User-friendly error message is shown
+
+Common handled errors:
+
+No internet connection
+
+API failure
+
+Timeout
+
+Invalid response
+
+#Error Handling
+
+Empty / invalid amount input
+
+Non-numeric values
+
+Amount must be greater than 0
+
+Duplicate currencies not allowed
+
+API errors handled gracefully
+
+Safe JSON parsing to prevent crashes
+
+Offline fallback using cache
+
+#Code Structure
+
+lib/
+ ├── main.dart
+ ├── src/
+ │   ├── app/
+ │   │   ├── app.dart
+ │   │   └── providers.dart
+ │   ├── data/
+ │   │   ├── api/
+ │   │   ├── cache/
+ │   │   └── repositories/
+ │   └── features/
+ │       └── converter/
+ │           ├── models/
+ │           ├── view_model/
+ │           └── screens/
+
+#Assumptions
+
+Exchange rates are cached for 6 hours
+
+Base currency defaults to USD
+
+Duplicate currencies are restricted
+
+Base currency is not converted
+
+Cached data is used when API fails or internet is unavailable
+
+#UI / Fonts
+
+Uses Manrope font for UI
+
+Clean and modern design
+
+Responsive layout support
+
+#Notes
+
+Uses FFI-based configuration instead of environment variables
+
+Internet connection required for first fetch
+
+Offline mode supported via caching
+
+Built using MVVM-style architecture
+
+State management handled using Riverpod
+
+#Tech Stack
+
+Flutter
+
+Riverpod
+
+SharedPreferences
+
+FFI (native config)
+
+MVVM-style architecture
+
